@@ -1,14 +1,14 @@
 from keybert import KeyBERT
-from random import randint
-from time import sleep
-import nltk
+import json
+import pyspark
 from langdetect import detect_langs
 from googleapiclient.discovery import build
 import re
 from rake_nltk import Rake
-#api_key='AIzaSyCXDuwzhzgKwYsmzLlFFVzA6x4-6UAHf7U'
-api_key='AIzaSyCKbOlR9GSCCWb2BZaGMIZGrEN6oSyVKsk'
-api_key ='AIzaSyDm_6C77U3HzPTCJpQQk68YBEUCzaTaVz0'
+api_key='AIzaSyABGDWyqMQ1xQLwwTgjeNiXYN6J7sMppsg'
+#api_key='AIzaSyB5_ETQPRwDzC-9KhGb8S_k2CZRNSNqFGg'
+#api_key ='AIzaSyDm_6C77U3HzPTCJpQQk68YBEUCzaTaVz0'
+#api_key = 'AIzaSyCAGT53gE1aVQpzBhJlIYiEXXSVpQzu0zI'
 youtube = build('youtube','v3',developerKey=api_key)
 
 
@@ -93,40 +93,48 @@ def comments_getter(id):
     return commentsList
 
 def videoInfo_getter():
-    for o in range(0,100):
-        f = open ("video_id.txt","r")
-        wholeFile = f.read()
-        wholeFile = wholeFile.split()
-        id = wholeFile[0]
-        f.close()
-        f = open("video_id.txt","w")
-        for a in range(1,len(wholeFile)):
-            f.write(wholeFile[a]+" ")
-        request = youtube.videos().list(
-            part="snippet,contentDetails,statistics",
-            id=wholeFile[0]
-            #id = 'RE_ngo5na_8'
-        )
-        response = request.execute()
-        info = response['items']
-        id = info[0]['id']
-        title = info[0]['snippet']['title']
-        description = info[0]['snippet']['description']
-        if('tags' in info[0]['snippet']):
-            tags = info[0]['snippet']['tags']
-        else:
-            tags = "[]"
-        if(str(info[0].get("statistics").get("commentCount"))=="None") or (str(info[0].get("statistics").get("commentCount"))=='0'):
-           listOfComments=[]
+    for o in range(0,8000):
+        try:
+            print("B")
+            f = open ("video_id2.txt","r")
+            wholeFile = f.read()
+            wholeFile = wholeFile.split()
+            id = wholeFile[0]
+            f.close()
+            print("C")
+            f = open("video_id2.txt","w")
+            for a in range(1,len(wholeFile)):
+                f.write(wholeFile[a]+" ")
 
-        else:
+            request = youtube.videos().list(
+                part="snippet,contentDetails,statistics",
+                id=wholeFile[0]
+                #id = 'RE_ngo5na_8'
+            )
+            response = request.execute()
+            print("A")
+            info = response['items']
+            id = info[0]['id']
+            title = info[0]['snippet']['title']
+            description = info[0]['snippet']['description']
+            if('tags' in info[0]['snippet']):
+                tags = info[0]['snippet']['tags']
+            else:
+                tags = "[]"
+            if(str(info[0].get("statistics").get("commentCount"))=="None") or (str(info[0].get("statistics").get("commentCount"))=='0'):
+               listOfComments=[]
 
-            listOfComments = comments_getter(id)
-        video_info = "id:"+id+" title: " + title + " " + "description: " + description + " tags: " + str(tags) + "comments: " + str(listOfComments)+" "
+            else:
 
-        f = open("final_dataset.txt", "a",encoding="utf-8")
-        f.write(video_info)
-        f.close()
+                listOfComments = comments_getter(id)
+            video_info = "id:"+id+" title: " + title + " " + "description: " + description + " tags: " + str(tags) + "comments: " + str(listOfComments)+" "
+
+            f = open("final_dataset.txt", "a",encoding="utf-8")
+            f.write(video_info)
+            f.close()
+        except:
+            print(id)
+            print("Ok")
 def removeDuplicates():
     f=open("video_id3.txt",'r')
     wholeFile = f.read()
@@ -138,8 +146,9 @@ def removeDuplicates():
         f.write(mylist[i]+" ")
     f.close()
 def findKeyWords():
+    print("A")
     rake = Rake()
-    pocetIteracii=10
+    pocetIteracii=20
     f = open("final_dataset.txt", 'r',encoding="utf-8")
     list = []
 
@@ -178,7 +187,7 @@ def findKeyWords():
 
     #TITLE
     for i in range (0,pocetIteracii):
-        #print(i)
+        print(i)
         try:
             lan={lang.lang: lang.prob for lang in detect_langs(list[i].description)}
             if "en" in lan:
@@ -232,23 +241,100 @@ def findKeyWords():
                     indexC[list[i].keywordComm[j]] = [list[i].id]
 
 
-    print("Input keyword:")
+    #Otvorenie description indexu a načítanie
+    d = open("indexD.txt", "w")
+    d.write(json.dumps(indexD))
+    d.close()
+    # Otvorenie title indexu a načítanie
 
-    while(True):
-        input1 = input()
-        if(input1 in indexT):
-            print(indexT[input1])
-        else:
-            print("Keyword is not stored.")
-        if(input()==str("0")):
-            break
+    d = open("indexT.txt", "w")
+    d.write(json.dumps(indexT))
+    d.close()
+
+    # Otvorenie comment indexu a načítanie
+
+    d = open("indexC.txt", "w")
+    d.write(json.dumps(indexC))
+    d.close()
+
+    print(a)
+    print(b)
+    print(c)
+
+    print("Ak chceš vyhľadavať v Title stlač 1 ")
+    print("Ak chceš vyhľadávať v Popiskoch stlač 2")
+    print("Ak chceš vyhľadávať v Commentoch stlač 2")
+#    d= open("indexD.txt","r")
+#    a= json.loads(d.read())
+
+
+
+
+
+
+def getIdFromJson():
+    print("A")
+    f = open('data.txt')
+    data= f.readlines()
+    f.close()
+    f= open('video_id2.txt','w')
+    for i in range(1,len(data)):
+        #print(data[i])
+        f.write(data[i].split(',')[0]+" ")
+        print(data[i].split(',')[0])
+
+def search():
+    # Otvorenie description indexu a načítanie
+    d = open("indexD.txt", "r")
+    a = json.loads(d.read())
+    d.close()
+
+    # Otvorenie title indexu a načítanie
+    d = open("indexT.txt", "r")
+    b = json.loads(d.read())
+    d.close()
+
+    # Otvorenie comment indexu a načítanie
+    d = open("indexC.txt", "r")
+    c = json.loads(d.read())
+    d.close()
+
+    print(a)
+    print(b)
+    print(c)
+
+    print("Ak chceš vyhľadavať v Title stlač 1 ")
+    print("Ak chceš vyhľadávať v Popiskoch stlač 2")
+    print("Ak chceš vyhľadávať v Commentoch stlač 3")
+    input1 = input()
+    if(input1 =='1'):
+        print("Zadaj hľadaný výraz.")
+        while(True):
+            input1 = input()
+            if(input1 in a):
+                print(a[input1])
+            else:
+                print("Keyword nie je v indexe.")
+    elif(input1 == '2'):
+        print('Zadaj hľadaný výraz.')
+        while (True):
+            input1 = input()
+            if (input1 in b):
+                print(b[input1])
+            else:
+                print("Keyword nie je v indexe.")
+    elif(input1 == '3'):
+        print('Zadaj hľadaný výraz.')
+    else:
+        print("Missclick")
 
 def main():
-    #videoInfo_getter()
-    findKeyWords()
+    videoInfo_getter()
+    #findKeyWords()
     #removeDuplicates()
     #videoID_getter()
-
+    #getIdFromJson()
+    #search()
 
 if __name__ == "__main__":
     main()
