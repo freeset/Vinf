@@ -9,9 +9,9 @@ from pyspark.sql.types import StructType, ArrayType, StringType
 
 
 # Api_keys for connection to Youtube data API v3.
-#LINE 24 should be uncommented and in line 21 should be api key added
+#LINE 14 should be uncommented and in line 21 should be api key added
 
-api_key="AIzaSyCAGT53gE1aVQpzBhJlIYiEXXSVpQzu0zI"
+#api_key=""
 # api_key=""
 # api_key=""
 youtube = build('youtube','v3',developerKey=api_key)
