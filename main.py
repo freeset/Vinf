@@ -1,21 +1,25 @@
 from keybert import KeyBERT
 from collections import namedtuple
+import json
+from langdetect import detect_langs
 from googleapiclient.discovery import build
 import re
+from rake_nltk import Rake
+import sys
 import os
+import pyspark
+from pyspark.sql.functions import count
 from pyspark.sql.functions import monotonically_increasing_id
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, ArrayType, StringType
+from pyspark.sql.functions import col
 
 
 # Api_keys for connection to Youtube data API v3.
-#LINE 14 should be uncommented and in line 21 should be api key added
 
-#api_key=""
 # api_key=""
 # api_key=""
-youtube = build('youtube','v3',developerKey=api_key)
-
+# api_key=""
 
 # Method for getting list of youtube videos IDS and saving them to file.
 # ID is 11 characters long string after https://www.youtube.com/watch?v=
@@ -201,7 +205,7 @@ def pysparkCreateCsv():
 
     # Create dataframe from list and save it as csv.
     df = spark.createDataFrame(listOfVideos, ["id", "title", "description", "tags", "comments"])
-    df.write.csv("final_dataset_preprocessed")
+    df.write.csv("test_dataset_preprocessed")
 
 
 # Read csv and index keywords.
@@ -214,7 +218,7 @@ def pysparkReadCsv():
         .add("tags", "string") \
         .add("comments", "string")
 
-    videoData = spark.read.option("multiLine", True).option("encoding", "UTF-8").csv("final_dataset_preprocessed",
+    videoData = spark.read.option("multiLine", True).option("encoding", "UTF-8").csv("test_dataset_preprocessed",
                                                                                      schema=videoSchema)
     kw_model = KeyBERT()
 
@@ -282,27 +286,105 @@ def searchInIndex():
         find_keyword_in_files(place, prompt)
 
 
-def testOfSearchInIndex(prompt):
+def testOfSearchInIndex(prompt, testNumber):
     inp = prompt
     prompt_split = inp.split(' ')
     prompt = prompt_split[1]
     place = "indexes_comment" if "comments" in prompt_split[0] else "indexes_desc" if "description" in prompt_split[
         0] else "indexes_title"
+    if (testNumber == 4 or testNumber == 5):
+        return place
     keyword = find_keyword_in_files(place, prompt)
     return keyword
 
 
-def test1():
-    testList = ["NnNKgpm5FN4\n", "D98MeNAkYVQ\n", "_vE0EwPoXIc\n", "l0IcNPKSZnM\n"]
-    sample = testOfSearchInIndex("comments zombies")
+# def searchTest4():
+#     #check parsing
+
+# def searchTest5():
+#     #Check if directories are there
+
+# def searchTest6():
+
+
+def searchTest1():
+    testList = ["450p7goxZqg\n"]
+    sample = testOfSearchInIndex("comments artist", 1)
     if (sample == testList):
         print("Correct")
+        return 1
+    else:
+        print("Incorrect")
+        return 0
 
 
-def test2():
-    sample = testOfSearchInIndex("titles aaaaaaaaaa")
+def searchTest2():
+    sample = testOfSearchInIndex("titles aaaaaaaaaa", 2)
     if (sample == "keyword aaaaaaaaaa does not exist in any videos"):
         print("Correct")
+        return 1
+    else:
+        print("Incorrect")
+        return 0
+
+
+def searchTest3():
+    testList = ["b5Ek9F-dnwA\n", "NTk_kTVO0x4\n", "NjDP3dXGQV8\n"]
+    sample = testOfSearchInIndex("description 2021", 3)
+    if (sample == testList):
+        print("Correct")
+        return 1
+    else:
+        print("Incorrect")
+        return 0
+
+
+def searchTest0():
+    if os.path.isdir("indexes_title") and os.path.isdir("indexes_comment") and os.path.isdir("indexes_desc"):
+        print("Correct")
+        return 1
+    else:
+        print("Incorrect")
+        return 0
+
+
+def searchTest4():
+    place = testOfSearchInIndex("description 2021", 4)
+    if (place == "indexes_desc"):
+        print("Correct")
+        return 1
+    else:
+        print("Incorrect")
+        return 0
+
+
+def searchTest5():
+    place = testOfSearchInIndex("aaaaaa 2021", 5)
+    print(place)
+    if (place == "indexes_title"):
+        print("Correct")
+        return 1
+    else:
+        print("Incorrect")
+        return 0
+
+
+def searchTests():
+    # Test if indexes exist
+    test0 = searchTest0()
+    # Tests if search returns correct output
+    test1 = searchTest1()
+    test2 = searchTest2()
+    test3 = searchTest3()
+    # Tests if valid category is choosen
+    # Default should be title if invalid
+    test4 = searchTest4()
+    test5 = searchTest5()
+
+    if (test0 == 1 and test1 == 1 and test2 == 1 and test3 == 1 and test4 == 1 and test5 == 1):
+        print("All tests correct")
+    else:
+        print("Something wrong")
 
 
 def main():
@@ -313,17 +395,16 @@ def main():
     # videoInfo_getter()
 
     # Create .csv file from .txt CSV file is saved to hadoop.
-    pysparkCreateCsv()
+    # pysparkCreateCsv()
 
     # Read csv and create index from keywords.
     # pysparkReadCsv()
 
     # Find video ID for keyword.
-    #searchInIndex()
+    # searchInIndex()
 
     # TESTS
-    # test1()
-    # test2()
+    searchTests()
 
 
 if __name__ == "__main__":
