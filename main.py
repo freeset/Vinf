@@ -398,13 +398,13 @@ def main():
     # pysparkCreateCsv()
 
     # Read csv and create index from keywords.
-    # pysparkReadCsv()
+    pysparkReadCsv()
 
     # Find video ID for keyword.
-    # searchInIndex()
+    searchInIndex()
 
     # TESTS
-    searchTests()
+    #searchTests()
 
 
 if __name__ == "__main__":
